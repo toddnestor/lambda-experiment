@@ -105,6 +105,13 @@ resource "aws_iam_role" "codepipeline_role" {
         "Service": "codebuild.amazonaws.com"
       },
       "Action": "sts:AssumeRole"
+    },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "codedeploy.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
     }
   ]
 }
@@ -309,8 +316,9 @@ resource "aws_codepipeline" "codepipeline" {
         ActionMode     = "REPLACE_ON_FAILURE"
         Capabilities   = "CAPABILITY_AUTO_EXPAND,CAPABILITY_IAM"
         OutputFileName = "CreateStackOutput.json"
-        StackName      = "MyStack"
+        StackName      = "LambdaTestStack"
         TemplatePath   = "build_output::template.yaml"
+        RoleArn        = "${aws_iam_role.codepipeline_role.arn}"
       }
     }
   }
