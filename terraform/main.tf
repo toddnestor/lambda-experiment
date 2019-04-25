@@ -40,8 +40,9 @@ EOF
 resource "aws_lambda_function" "test_lambda" {
   function_name    = "test_function"
   role             = "${aws_iam_role.iam_for_lambda.arn}"
-  handler          = "exports.test"
+  handler          = "exports.handler"
   runtime          = "nodejs8.10"
+  s3_bucket        = "${aws_s3_bucket.codepipeline_bucket.bucket}"
 
   environment {
     variables = {
@@ -120,7 +121,11 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
       "Action": [
         "s3:GetObject",
         "s3:GetObjectVersion",
-        "s3:GetBucketVersioning"
+        "s3:GetBucketVersioning",
+        "s3:PutObject",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionAcl",
+        "s3:PutObjectVersionTagging"
       ],
       "Resource": [
         "${aws_s3_bucket.codepipeline_bucket.arn}",
@@ -176,6 +181,7 @@ resource "aws_codepipeline" "codepipeline" {
         Owner  = "toddnestor"
         Repo   = "lambda-experiment"
         Branch = "master"
+        OAuthToken = "${var.github_token}"
       }
     }
   }

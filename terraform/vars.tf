@@ -5,3 +5,4 @@ variable "public_key_path" {}
 variable "key_name" {
   default = "terraform"
 }
+variable "github_token" {}
