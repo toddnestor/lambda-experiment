@@ -32,24 +32,25 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
-//resource "aws_lambda_function" "test_lambda" {
-//  function_name    = "test_function"
-//  role             = "${aws_iam_role.iam_for_lambda.arn}"
-//  handler          = "exports.handler"
-//  runtime          = "nodejs8.10"
-//  s3_bucket        = "${aws_s3_bucket.codepipeline_bucket.bucket}"
-//
-//  environment {
-//    variables = {
-//      foo = "bar"
-//    }
-//  }
-//}
+resource "aws_lambda_function" "test_lambda" {
+  function_name = "test_function"
+  role          = "${aws_iam_role.iam_for_lambda.arn}"
+  handler       = "index.handler"
+  runtime       = "nodejs8.10"
+  s3_bucket     = "${aws_s3_bucket.codepipeline_bucket.bucket}"
+  s3_key        = "tf-test-pipeline/build_outp/OTTDsbE"
 
-//resource "aws_cloudwatch_log_group" "example" {
-//  name              = "/aws/lambda/${aws_lambda_function.test_lambda.function_name}"
-//  retention_in_days = 14
-//}
+  environment {
+    variables = {
+      foo = "bar"
+    }
+  }
+}
+
+resource "aws_cloudwatch_log_group" "example" {
+  name              = "/aws/lambda/${aws_lambda_function.test_lambda.function_name}"
+  retention_in_days = 14
+}
 
 # See also the following AWS managed policy: AWSLambdaBasicExecutionRole
 resource "aws_iam_policy" "lambda_logging" {
@@ -118,6 +119,26 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
 {
   "Version": "2012-10-17",
   "Statement": [
+    {
+      "Action": [
+        "apigateway:*",
+        "codedeploy:*",
+        "lambda:*",
+        "cloudformation:CreateChangeSet",
+        "iam:GetRole",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:PutRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PassRole",
+        "s3:GetObjectVersion",
+        "s3:GetBucketVersioning"
+      ],
+      "Resource": "*",
+      "Effect": "Allow"
+    },
     {
       "Action": [
         "codepipeline:*",
@@ -289,7 +310,7 @@ resource "aws_codepipeline" "codepipeline" {
         Capabilities   = "CAPABILITY_AUTO_EXPAND,CAPABILITY_IAM"
         OutputFileName = "CreateStackOutput.json"
         StackName      = "MyStack"
-        TemplatePath   = "build_output::sam-templated.yaml"
+        TemplatePath   = "build_output::template.yaml"
       }
     }
   }

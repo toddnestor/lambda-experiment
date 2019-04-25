@@ -3,4 +3,5 @@ version: 0.2
 artifacts:
   files:
     - the-function/index.js
+    - the-function/template.yaml
   discard-paths: yes
