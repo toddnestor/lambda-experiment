@@ -12,11 +12,6 @@ provider "aws" {
 # RESOURCES
 ##################################################################################
 
-resource "aws_key_pair" "terraform" {
-  key_name = "terraform"
-  public_key = "${file(var.public_key_path)}"
-}
-
 resource "aws_iam_role" "iam_for_lambda" {
   name = "iam_for_lambda"
 
@@ -167,6 +162,34 @@ data "aws_kms_alias" "s3kmskey" {
   name = "alias/myKmsKey"
 }
 
+resource "aws_codebuild_project" "lambda_testing" {
+  name          = "lambda-testing"
+  description   = "test_codebuild_project"
+  build_timeout = "5"
+  service_role  = "${aws_iam_role.codepipeline_role.arn}"
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  cache {
+    type     = "S3"
+    location = "${aws_s3_bucket.codepipeline_bucket.bucket}"
+  }
+
+  environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:1.0"
+    type                        = "LINUX_CONTAINER"
+    image_pull_credentials_type = "CODEBUILD"
+  }
+
+  source {
+    type            = "CODEPIPELINE"
+    buildspec = "the-function/buildspec.yml"
+  }
+}
+
 resource "aws_codepipeline" "codepipeline" {
   name     = "tf-test-pipeline"
   role_arn = "${aws_iam_role.codepipeline_role.arn}"
@@ -214,7 +237,7 @@ resource "aws_codepipeline" "codepipeline" {
       version         = "1"
 
       configuration = {
-        ProjectName = "test"
+        ProjectName = "${aws_codebuild_project.lambda_testing.name}"
       }
     }
   }
