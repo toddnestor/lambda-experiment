@@ -53,8 +53,8 @@ EOF
 
 # See also the following AWS managed policy: AWSLambdaBasicExecutionRole
 resource "aws_iam_policy" "lambda_logging" {
-  name = "lambda_logging"
-  path = "/"
+  name        = "lambda_logging"
+  path        = "/"
   description = "IAM policy for logging from a lambda"
 
   policy = <<EOF
@@ -75,7 +75,7 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
-  role = "${aws_iam_role.iam_for_lambda.name}"
+  role       = "${aws_iam_role.iam_for_lambda.name}"
   policy_arn = "${aws_iam_policy.lambda_logging.arn}"
 }
 
@@ -95,6 +95,13 @@ resource "aws_iam_role" "codepipeline_role" {
       "Effect": "Allow",
       "Principal": {
         "Service": "codepipeline.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "codebuild.amazonaws.com"
       },
       "Action": "sts:AssumeRole"
     }
@@ -147,6 +154,30 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
     },
     {
       "Effect": "Allow",
+      "Resource": [
+        "*"
+      ],
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateNetworkInterface",
+        "ec2:DescribeDhcpOptions",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DeleteNetworkInterface",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeVpcs"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
       "Action": [
         "codebuild:BatchGetBuilds",
         "codebuild:StartBuild"
@@ -185,7 +216,7 @@ resource "aws_codebuild_project" "lambda_testing" {
   }
 
   source {
-    type            = "CODEPIPELINE"
+    type      = "CODEPIPELINE"
     buildspec = "the-function/buildspec.yml"
   }
 }
@@ -216,9 +247,9 @@ resource "aws_codepipeline" "codepipeline" {
       output_artifacts = ["source_output"]
 
       configuration = {
-        Owner  = "toddnestor"
-        Repo   = "lambda-experiment"
-        Branch = "master"
+        Owner      = "toddnestor"
+        Repo       = "lambda-experiment"
+        Branch     = "master"
         OAuthToken = "${var.github_token}"
       }
     }
@@ -228,13 +259,13 @@ resource "aws_codepipeline" "codepipeline" {
     name = "Build"
 
     action {
-      name            = "Build"
-      category        = "Build"
-      owner           = "AWS"
-      provider        = "CodeBuild"
-      input_artifacts = ["source_output"]
+      name             = "Build"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["source_output"]
       output_artifacts = ["build_output"]
-      version         = "1"
+      version          = "1"
 
       configuration = {
         ProjectName = "${aws_codebuild_project.lambda_testing.name}"
@@ -246,12 +277,12 @@ resource "aws_codepipeline" "codepipeline" {
     name = "Deploy"
 
     action {
-      name             = "Deploy"
-      category         = "Deploy"
-      owner            = "AWS"
-      provider         = "CloudFormation"
-      input_artifacts  = ["build_output"]
-      version          = "1"
+      name            = "Deploy"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "CloudFormation"
+      input_artifacts = ["build_output"]
+      version         = "1"
 
       configuration {
         ActionMode     = "REPLACE_ON_FAILURE"

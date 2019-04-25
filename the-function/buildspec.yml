@@ -2,5 +2,5 @@ version: 0.2
 
 artifacts:
   files:
-    - the-function/buildspec.yml
+    - the-function/index.js
   discard-paths: yes
