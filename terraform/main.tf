@@ -37,24 +37,24 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
-resource "aws_lambda_function" "test_lambda" {
-  function_name    = "test_function"
-  role             = "${aws_iam_role.iam_for_lambda.arn}"
-  handler          = "exports.handler"
-  runtime          = "nodejs8.10"
-  s3_bucket        = "${aws_s3_bucket.codepipeline_bucket.bucket}"
+//resource "aws_lambda_function" "test_lambda" {
+//  function_name    = "test_function"
+//  role             = "${aws_iam_role.iam_for_lambda.arn}"
+//  handler          = "exports.handler"
+//  runtime          = "nodejs8.10"
+//  s3_bucket        = "${aws_s3_bucket.codepipeline_bucket.bucket}"
+//
+//  environment {
+//    variables = {
+//      foo = "bar"
+//    }
+//  }
+//}
 
-  environment {
-    variables = {
-      foo = "bar"
-    }
-  }
-}
-
-resource "aws_cloudwatch_log_group" "example" {
-  name              = "/aws/lambda/${aws_lambda_function.test_lambda.function_name}"
-  retention_in_days = 14
-}
+//resource "aws_cloudwatch_log_group" "example" {
+//  name              = "/aws/lambda/${aws_lambda_function.test_lambda.function_name}"
+//  retention_in_days = 14
+//}
 
 # See also the following AWS managed policy: AWSLambdaBasicExecutionRole
 resource "aws_iam_policy" "lambda_logging" {
@@ -117,19 +117,37 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Action": [
+        "codepipeline:*",
+        "iam:ListRoles",
+        "iam:PassRole",
+        "s3:CreateBucket",
+        "s3:GetBucketPolicy",
+        "s3:GetObject",
+        "s3:ListAllMyBuckets",
+        "s3:ListBucket",
+        "s3:PutBucketPolicy",
+        "codedeploy:GetApplication",
+        "codedeploy:GetDeploymentGroup",
+        "codedeploy:ListApplications",
+        "codedeploy:ListDeploymentGroups",
+        "elasticbeanstalk:DescribeApplications",
+        "elasticbeanstalk:DescribeEnvironments",
+        "lambda:GetFunctionConfiguration",
+        "lambda:ListFunctions"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
       "Effect":"Allow",
       "Action": [
-        "s3:GetObject",
-        "s3:GetObjectVersion",
-        "s3:GetBucketVersioning",
-        "s3:PutObject",
-        "s3:PutObjectTagging",
-        "s3:PutObjectVersionAcl",
-        "s3:PutObjectVersionTagging"
+        "s3:*"
       ],
       "Resource": [
         "${aws_s3_bucket.codepipeline_bucket.arn}",
-        "${aws_s3_bucket.codepipeline_bucket.arn}/*"
+        "${aws_s3_bucket.codepipeline_bucket.arn}/*",
+        "arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser"
       ]
     },
     {
@@ -145,11 +163,8 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
 EOF
 }
 
-resource "aws_kms_key" "special" {}
-
-resource "aws_kms_alias" "s3kmskey" {
-  name = "alias/my-kms-key"
-  target_key_id = "${aws_kms_key.special.key_id}"
+data "aws_kms_alias" "s3kmskey" {
+  name = "alias/myKmsKey"
 }
 
 resource "aws_codepipeline" "codepipeline" {
@@ -161,7 +176,7 @@ resource "aws_codepipeline" "codepipeline" {
     type     = "S3"
 
     encryption_key {
-      id   = "${aws_kms_alias.s3kmskey.arn}"
+      id   = "${data.aws_kms_alias.s3kmskey.arn}"
       type = "KMS"
     }
   }
